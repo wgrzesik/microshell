@@ -1,0 +1,7 @@
+# depslib dependency file v1.0
+1640162029 source:c:\users\dell\documents\studia\systemy operacyjne\shell\microshell.c
+	<stdio.h>
+	<string.h>
+	<unistd.h>
+	<stdlib.h>
+
