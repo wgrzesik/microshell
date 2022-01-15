@@ -6,52 +6,61 @@
 #include <sys/wait.h>
 #include <sys/types.h>
 
-#define MAXHISTORY 100
+#define MAXHISTORY 100        // <-- zmienic
+#define MAXCOMMANDS 6
+#define MAXINPUT 100
 
 void printPrompt();
 void quotationmarks();
+void read_command();
+void updatehistory();
+
 void command_help();
 void command_exit();
-void read_command();
 void command_cd();
-void updatehistory();
 void command_history();
 void command_nfromhistory();
 void command_lastfromhistory();
+
+void RemoveRepeatsInHistory();
 void offsethistory(int linia);
 
-char path[512], USER[512];
-char input[1024];
-char history[MAXHISTORY][80];
-//char s[80];
+char path[512], USER[512], lastpath[512];
+char input[MAXINPUT];
+char history[MAXHISTORY][MAXINPUT];
 int counter;
 int hiscount = 0;
-int len,num;
+int len, num, linia;
 int komenda;
 int suma = 0;
-char shell[5] = "shell";
-char *parameters[20], *input_p, *command, *param_p, *archive;
-#define numbercommands 6
 
-char *my_commands[numbercommands] = {"help", "exit", "cd", "history", "!!", "!n"}; /*have to update */
+char shell[5] = "shell";
+char *parameters[10], *input_p, *command, *param_p, *archive;
+//char *my_commands[MAXCOMMANDS] = {"help", "exit", "cd", "history", "!!", "!n"};
 
 
 int main()
-{   //int linia;                                        // dodac to do cd funkcje
+{
+    strcpy(path, "/home/students/s473561");
+
     while(1){
 
-        if (komenda != 1){
+        strcpy(lastpath,path);
+
+        if (komenda == 0){
+            RemoveRepeatsInHistory();
             printPrompt();
             fgets(input, 1024, stdin);
         }else {
-            strcpy(input, history[num]);
-           // komenda = 0;
+            strcpy(input, history[num]);    //komenda = 1 -> uruchamiany main() w main() komendą jest wcześniej wybrane polecenie
+
         }
 
         read_command();
         updatehistory();
         hiscount++;
 
+        RemoveRepeatsInHistory();
 
 
         if (command != NULL){
@@ -69,7 +78,9 @@ int main()
                 komenda = 1;
                 command_lastfromhistory();
 
+
             }else if (command[0] == '!'){
+
                 komenda = 1;
                 command_nfromhistory();
 
@@ -80,7 +91,7 @@ int main()
                 if ( pid  == 0){
 
                     if (execvp(command, parameters) == -1){  // execvp(), bo parameters jest tablica
-                    printf("Blad (%d) : %s\n",errno, strerror(errno));
+                    printf("-%s: %s: command not found\n",shell, command);
                     exit(1);
                     }
 
@@ -90,23 +101,22 @@ int main()
 
                 }
             }
-            if (komenda == 1){      //usuwa z historii komendy: !! i !n oraz ich wywołania (tak samo jak w bashu)
-                int liczba = hiscount;
-                offsethistory(liczba);
-                offsethistory(liczba-1);
-            }
+
             komenda = 0;
+
+        }else{
+
+            linia = hiscount;      //usuwanie pustych linijek z historii, czyli gdy wpiszemy enter
+            offsethistory(linia);
+        }
     }
-    }
-    //return 0;
+
     exit(0);
 
 }
 
 void read_command() /* gets input and parse it */
 {
-
-
     quotationmarks();
     input_p = input;
     len = strlen(input_p);
@@ -121,9 +131,10 @@ void read_command() /* gets input and parse it */
         param_p = strtok(NULL, " ");
 
         i++;
-        counter++;
+
     }
     parameters[i++] = NULL;
+    counter = i-1;
 
 
 }
@@ -153,36 +164,52 @@ void quotationmarks() /* converts if input is in " " */
 void command_help()
 {
     if (counter == 1){
+
         printf("Wiktoria Grzesik - Projekt Microshell\n");
-        printf("Available commands : help, exit, cd\n");
+        printf("Available commands : help, exit, cd, history, !!, !n\n");
+
     }else{
-        printf("Blad : Za duzo argumentow\n");
+
+        printf("-%s: %s: too many arguments\n", shell, command);
     }
 }
 
 void command_exit()
 {
     if (counter == 1){
-        exit(0);
 
+        exit(0);
     }else{
-        printf("Blad : Za duzo argumentow\n");
+
+        printf("-%s: %s: too many arguments\n", shell, command);
     }
 }
 
 void command_cd()
 {
 
-    if (parameters[1] != NULL){
+    if (counter == 1){
+
+        chdir(getenv("HOME"));
+
+    }else if (counter == 2){
 
         if (strcmp(parameters[1], "~") == 0){
 
             chdir(getenv("HOME"));
 
+        }else if(strcmp(parameters[1], "-") == 0){
+
+            printf("%s\n", lastpath);
+            chdir(lastpath);
+
         }else if(chdir(parameters[1]) == -1){
 
-                printf("Blad (%d) : %s\n",errno, strerror(errno));
-            }
+            printf("-%s: %s: %s: No such file or directory\n", shell, command, parameters[1]);
+        }
+
+    }else{
+             printf("-%s: %s: too many arguments\n", shell, command);
     }
 }
 void command_history()
@@ -196,13 +223,26 @@ void command_history()
 
         if (strcmp(parameters[1],"-c") == 0){       //usuwa cala historie
 
-            memset(history, 0, 8000);
+            memset(history, 0, MAXINPUT*MAXHISTORY);
             hiscount = 0;
 
          }else if ((strcmp(parameters[1],"-d") == 0) || (strcmp(parameters[1],"offset") == 0)){     //usuwa podana linie z historii
 
-            int linia = atoi(parameters[2]);
-            offsethistory(linia);
+            if (counter == 3){
+
+                if (atoi(parameters[2]) == 0){
+                    printf("-%s: %s: %s: position out of range\n", shell, command, parameters[2]);
+
+                }else{
+
+                    int linia = atoi(parameters[2]);
+                    offsethistory(linia);
+                }
+
+            }else {
+                printf("-%s: %s: %s: option requires an argument\n",shell, command, parameters[1]);      //blednie podana flaga
+                printf("history: usage: [-c] [-d offset] [n]\n");
+            }
 
             }else if (atoi(parameters[1]) > 0 ){        //wypisuje n ostatnich polecen
 
@@ -211,7 +251,7 @@ void command_history()
                      printf("\t%d %s\n",j+1,history[j]);
                 }
 
-           } else {
+           }else{
 
                 printf("-%s: %s: %s: invalid option\n",shell, command, parameters[1]);      //blednie podana flaga
                 printf("history: usage: [-c] [-d offset] [n]\n");
@@ -234,14 +274,17 @@ void command_history()
 
 
 
-void offsethistory(int linia)        //DOKONCZYÆ !!!!
+void offsethistory(int linia)
 {
+
     if (abs(linia) > hiscount){       // czy to dodawac -> || (abs(linia)-hiscount == 0)
 
-       printf("-%s: %s :history position out of range\n", shell, command);
+       printf("-%s: %s: position out of range\n", shell, command);
+
     }else {
 
-        char history_buff[100][80] = {};
+        char history_buff[MAXHISTORY][MAXINPUT] = {};
+
 
         if ((linia < 0)  ){
 
@@ -262,7 +305,7 @@ void offsethistory(int linia)        //DOKONCZYÆ !!!!
             strcpy(history_buff[c], history[c]);
         }
 
-            memset(history, 0, 8000);
+        memset(history, 0,  MAXHISTORY*MAXINPUT);
 
         for (int c = 0; c < linia; c++){
 
@@ -274,29 +317,52 @@ void offsethistory(int linia)        //DOKONCZYÆ !!!!
             strcpy(history[c-1], history_buff[c]);
         }
 
-        memset(history_buff, 0, 8000);
+
+        memset(history_buff, 0,MAXHISTORY*MAXINPUT);
+
         hiscount -= 1;
 
     }
+    linia = 0;
 }
 void updatehistory()
 {
-    char s[80] = {};
+
+    if (hiscount == MAXHISTORY){    //sprawdzanie czy historia jest pełna, jeżeli tak to usuwamy najstarszy element, by zrobić miejsce na nowy
+
+        linia = 1;
+        offsethistory(linia);
+   }
+
+    char s[MAXINPUT] = {};
 
     for (int a = 0; a < counter; a++){
 
         strcat(s, parameters[a]);
         strcat(s, " ");
-    }
+        }
 
-    strcpy(history[hiscount], s);
 
-   // memset(s,0, 80);
-
+        strcpy(history[hiscount], s);
 }
 
+
+void RemoveRepeatsInHistory()
+{
+    if (hiscount > 1){
+
+            if (strcmp(history[hiscount - 1], history[hiscount - 2]) == 0){
+
+                linia = hiscount - 1;
+                offsethistory(linia);
+            }
+
+        }
+
+}
 void command_nfromhistory()    // !n - wykonuje n polecenie z historii, jezeli n < 0 to wykona n polecenie od konca listy
 {
+
     int ujemna = 0;
     if (command[3] != '\0'){        //nie moze byc liczba trzycyfrowa, bo historia jest do 100 lini
 
@@ -319,52 +385,50 @@ void command_nfromhistory()    // !n - wykonuje n polecenie z historii, jezeli n
             num = (command[1] - '0');
         }
 
-        if (abs(num) < hiscount){   //podana liczba musi byc wieksza niz przechoywana ilosc polecen w historii
+        if (num != 0){
 
-            if (ujemna == 1){
+            if (abs(num) < hiscount){   //podana liczba musi byc wieksza niz przechoywana ilosc polecen w historii
 
-                num = hiscount - num;
+                if (ujemna == 1){
+
+                    num = hiscount - num;
+
+                }else{
+
+                    num -= 1;
+                }
+
+                linia = hiscount;       //usuwa z historii komendę !n
+                offsethistory(linia);
+
+                printf("%s\n", history[num]);
+                main();
+                exit(0);
 
             }else{
 
-                num -= 1;
+                printf("-%s: %s: event not found\n", shell, command);
             }
-           // printf("%d", num);
-            komenda = 1;
-            printf("%s\n", history[num]);
-            main();
-            exit(0);
 
         }else{
 
-            printf("-%s: %s: event not found\n", shell, command);
+            printf("-%s: %s: position out of range\n", shell, command);
         }
-
     }
 
 }
 
 void command_lastfromhistory()
 {
-   // int  linia = hiscount;
-   // offsethistory(linia);
 
-   // hiscount++;
+    linia = hiscount;       //usuwa z historii komendę !!
+    offsethistory(linia);
 
-
-
-    num = hiscount-2;
+    num = hiscount-1;
     printf("%s\n", history[num]);
 
     main();
-
-
-
-
-
-
-
-
+    exit(0);
 }
 /*Prompt*/
 
