@@ -4,11 +4,7 @@
 	<ActiveTarget name="Debug" />
 	<File name="Microshell.c" open="1" top="1" tabpos="1" split="0" active="1" splitpos="0" zoom_1="-2" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="379" topLine="3" />
+			<Cursor1 position="83" topLine="2" />
 		</Cursor>
-		<Folding>
-			<Collapse line="142" />
-			<Collapse line="177" />
-		</Folding>
 	</File>
 </CodeBlocks_layout_file>
