@@ -124,7 +124,7 @@ int main()
 
         }else{
 
-            line_number = hiscount;      //usuwanie pustych linijek z historii, gdy zostanie wpisany enter
+            line_number = hiscount;      // usuwa puste linie z historii - gdy zostanie wpisany enter
             OffsetHistory(line_number);
         }
     }
@@ -134,14 +134,14 @@ int main()
 
 }
 
-void PrintPrompt()  // wyświetla login i path
+void PrintPrompt()      // wyświetla login i path
 {
     getcwd(path,sizeof(path));
     printf( GREEN "[" BLUE "%s"  GREEN ":" PINK "%s" GREEN "]" NEON_BLUE "\n$ " WHITE, getenv("USER"), path);
 
 }
 
-void ReadCommand() // wczytuje polecenie i zapisuje do tablicy wslaźników
+void ReadCommand()      // wczytuje polecenie i zapisuje do tablicy wslaźników
 {
     QuotationMark();
 
@@ -163,7 +163,7 @@ void ReadCommand() // wczytuje polecenie i zapisuje do tablicy wslaźników
     command_counter = i-1;
 }
 
-void QuotationMark() //przekształca komendę jeżeli jest w cudzysłowie
+void QuotationMark()       // przekształca komendę jeżeli jest w cudzysłowie
 {
     int length = strlen(input);
 
@@ -183,7 +183,7 @@ void QuotationMark() //przekształca komendę jeżeli jest w cudzysłowie
 
 void UpdateHistory()    // dodaje do historii wpisane polecenie
 {
-    if (hiscount == MAXHISTORY){    //sprawdza czy historia jest pełna, jeżeli tak to usuwany jest najstarszy element, by zrobić miejsce na nowy
+    if (hiscount == MAXHISTORY){    // sprawdza czy historia jest pełna, jeżeli tak to usuwany jest najstarszy element, by zrobić miejsce na nowy
 
         line_number = 1;
         OffsetHistory(line_number);
@@ -202,7 +202,7 @@ void UpdateHistory()    // dodaje do historii wpisane polecenie
 
 }
 
-void RemoveRepeatsInHistory()   //usuwa powtarzające się linjki w historii
+void RemoveRepeatsInHistory()   // usuwa powtarzające się linjki w historii
 {
     if (hiscount > 1){
 
@@ -376,12 +376,12 @@ void Command_History()
 
         }else{
 
-            if (strcmp(parameters[1],"-c") == 0){       //usuwa cala historie
+            if (strcmp(parameters[1],"-c") == 0){       // usuwa cala historie
 
                 memset(history, 0, MAXINPUT*MAXHISTORY);
                 hiscount = 0;
 
-            }else if ((strcmp(parameters[1],"-d") == 0) || (strcmp(parameters[1],"offset") == 0)){     //usuwa podany numer lini z historii, jezeli cyfra ujemna to od ko
+            }else if ((strcmp(parameters[1],"-d") == 0) || (strcmp(parameters[1],"offset") == 0)){     // usuwa podany numer lini z historii, jezeli cyfra ujemna to od ko
 
                     if (command_counter == 3){
 
@@ -397,12 +397,12 @@ void Command_History()
 
                     }else {
 
-                        printf(RED "-%s: %s: %s: option requires an argument\n",shell, command, parameters[1]);      //blednie podana flaga do history -d
+                        printf(RED "-%s: %s: %s: option requires an argument\n",shell, command, parameters[1]);      // błędnie podana flaga do history -d
                         printf("history: usage: [-c] [-r] [-w] [-a] [-d offset] [n]\n" WHITE);
 
                     }
 
-            }else if((strcmp(parameters[1],"-w") == 0) || (strcmp(parameters[1],"-a") == 0)){   //w zależności od podanej flagi, wykonywane "history -w" lub "history -a"
+            }else if((strcmp(parameters[1],"-w") == 0) || (strcmp(parameters[1],"-a") == 0)){   // w zależności od podanej flagi, wykonywane "history -w" lub "history -a"
 
                 char *letter = &parameters[1][1];
                 StoreHistory(letter);
@@ -411,7 +411,7 @@ void Command_History()
 
                 History_r();
 
-            }else if (atoi(parameters[1]) > 0 ){        //wypisuje n ostatnich polecen
+            }else if (atoi(parameters[1]) > 0 ){        // wypisuje n ostatnich polecen
 
                 for (int j = (hiscount - atoi(parameters[1])); j < hiscount; j++){
 
@@ -421,7 +421,7 @@ void Command_History()
 
             }else{
 
-                printf(RED "-%s: %s: %s: invalid option\n",shell, command, parameters[1]);      //blednie podana flaga/polecenie
+                printf(RED "-%s: %s: %s: invalid option\n",shell, command, parameters[1]);      // błędnie podana flaga/polecenie
                 printf("history: usage: [-c] [-r] [-w] [-a] [-d offset] [n]\n" WHITE);
 
             }
@@ -430,9 +430,9 @@ void Command_History()
 
 }
 
-void OffsetHistory(int line_number)   //usuwa podana linie z historii, jezeli podana liczba jest mniejsza od zera to usuwa n-tą linię od końca
+void OffsetHistory(int line_number)   // usuwa podana linie z historii, jezeli podana liczba jest mniejsza od zera to usuwa n-tą linię od końca
 {
-    if (abs(line_number) > hiscount){       // czy to dodawac -> || (abs(linia)-hiscount == 0)
+    if (abs(line_number) > hiscount){
 
        printf(RED "-%s: %s: position out of range\n" WHITE , shell, command);
 
@@ -484,7 +484,7 @@ void OffsetHistory(int line_number)   //usuwa podana linie z historii, jezeli po
 }
 
 void StoreHistory(char *letter)     // dodaje liste historii do pliku shell_history (letter to "w" lub "a")
-{                                                       //"a" dopisuje na końcu pliku, "w" nadpisuje plik
+{                                                       // "a" dopisuje na końcu pliku, "w" nadpisuje plik
 
     historyfile = fopen("shell_history", letter);
 
