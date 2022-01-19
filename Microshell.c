@@ -4,7 +4,10 @@
 #include <stdlib.h>
 #include <sys/wait.h>
 #include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include <stdbool.h>
+#include <errno.h>
 
 #define MAXHISTORY 100
 #define MAXCOMMANDS 6
@@ -22,6 +25,7 @@
 void Command_Help();
 void Command_Exit();
 void Command_Cd();
+void Command_Cp();
 void Command_History();
 void Command_nFromHistory();
 void Command_lastFromHistory();
@@ -37,7 +41,6 @@ void OffsetHistory(int line_number);
 void StoreHistory(char *letter);
 void History_r();
 
-
 char USER[512], path[512], lastpath[512], input[MAXINPUT], history[MAXHISTORY][MAXINPUT], space_buff;
 char *parameters[10], *input_p, *command, *param_p;
 char shell[5] = "shell";
@@ -47,6 +50,8 @@ int hiscount = 0;
 int recursively_main = 0;
 
 FILE *historyfile;
+
+
 
 int main()
 {
@@ -60,7 +65,7 @@ int main()
 
             RemoveRepeatsInHistory();
             PrintPrompt();
-            fgets(input, 1024, stdin);
+            fgets(input, MAXINPUT, stdin);
 
         }else {
 
@@ -82,6 +87,8 @@ int main()
                 Command_Exit();
             }else if (strcmp(command, "cd") == 0){
                 Command_Cd();
+            }else if(strcmp(command, "cp") == 0){
+                Command_Cp();
             }else if(strcmp(command, "history") == 0){
                 Command_History();
             }else if (strcmp(command, "!!") == 0){
@@ -236,11 +243,11 @@ void Command_Help()
     if (command_counter == 1){
 
         printf(BROWN "\tWiktoria Grzesik - Projekt Microshell\n");
-        printf(YELLOW " Available commands : help, exit, cd, history, !!, !n\n" WHITE);
+        printf(YELLOW "Available commands : help, exit, cd, cp, history, !!, !n\n" WHITE);
 
     }else{
 
-        printf(RED "-%s: %s: too many arguments\n" WHITE, shell, command);
+        printf(RED "-%s: %s: too many arguments\n" WHITE , shell, command);
     }
 }
 
@@ -248,7 +255,6 @@ void Command_Exit()
 {
     if (command_counter == 1){
 
-        //char *letter = "a";
         StoreHistory("a");
 
         exit(0);
@@ -289,6 +295,69 @@ void Command_Cd()
     }
 }
 
+void Command_Cp()
+{
+    if (command_counter == 3){
+
+        if (strcmp(parameters[1], parameters[2]) != 0 ){
+
+            char *source = parameters[1];
+            char *destination = parameters[2];
+            char cp_buffer[1024];
+
+            int file_source = open(source, O_RDONLY);
+
+            if (file_source == -1){
+
+                printf(RED "-%s: %s: cannot stat '%s': No such file or directory\n" WHITE, shell, command, parameters[1]);
+
+            }else {
+
+                int number_of_bytes = read(file_source, cp_buffer, 1024);
+                close(file_source);
+
+                if (number_of_bytes == -1){
+
+                   printf(RED "-%s: %s: '%s' is a directory\n" WHITE, shell, command, parameters[1]);
+
+                }else {
+
+                    int file_destination = open(destination, O_WRONLY|O_CREAT|O_TRUNC, 0666);
+
+                    int written_number = write(file_destination, cp_buffer, number_of_bytes);
+
+                    if (written_number == -1){
+
+                        printf(RED "-%s: %s: '%s' is a directory\n" WHITE, shell, command, parameters[2]);
+                    }
+
+                    close(file_destination);
+                }
+            }
+
+        }else {
+
+        printf(RED "-%s: %s: " , shell, command);
+        printf("'%s' and '%s' are the same file\n "WHITE , parameters[2], parameters[2]);
+
+        }
+
+    }else if (command_counter == 2){
+
+        printf(RED "-%s: %s: " WHITE, shell, command);
+        printf("missing destination file operand after '%s'\n", parameters[1]);
+
+    }else if (command_counter == 1){
+
+        printf(RED "-%s: %s: missing file operand\n" WHITE, shell, command);
+
+    }else {
+
+        printf(RED "-%s: %s: too many arguments\n" WHITE, shell, command);
+    }
+
+}
+
 void Command_History()
 {
     if (command_counter > 3){
@@ -297,7 +366,7 @@ void Command_History()
 
     }else {
 
-        if (parameters[1] == NULL){    // gdy polecenie sklada się z ponad jednej czesci, czyli ma flagi
+        if (parameters[1] == NULL){    // gdy polecenie to "history", bez żadnej flagi
 
             for (int j = 0;j < hiscount; j++){  // wypisanie historii
 
@@ -525,7 +594,6 @@ void Command_nFromHistory()    // !n - wykonuje n-te polecenie z historii, jezel
         }
     }
 }
-
 
 
 
