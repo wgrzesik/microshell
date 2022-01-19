@@ -31,11 +31,12 @@ void QuotationMark();
 void ReadCommand();
 void UpdateHistory();
 void RemoveRepeatsInHistory();
+bool IsSpaceTheFirstCharacter();
+void RemoveIfSpaceIsFirstCharacter();
 void OffsetHistory(int line_number);
 void StoreHistory(char *letter);
 void History_r();
-bool IsSpaceTheFirstCharacter();
-void  RemoveIfSpaceIsFirstCharacter();
+
 
 char USER[512], path[512], lastpath[512], input[MAXINPUT], history[MAXHISTORY][MAXINPUT], space_buff;
 char *parameters[10], *input_p, *command, *param_p;
@@ -413,8 +414,8 @@ void OffsetHistory(int line_number)   //usuwa podana linie z historii, jezeli po
 
 }
 
-void StoreHistory(char *letter)     // dodaje do liste historii do pliku shell_history (letter to "w" lub "a")
-{
+void StoreHistory(char *letter)     // dodaje liste historii do pliku shell_history (letter to "w" lub "a")
+{                                                       //"a" dopisuje na końcu pliku, "w" nadpisuje plik
 
     historyfile = fopen("shell_history", letter);
 
