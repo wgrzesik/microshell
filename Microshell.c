@@ -22,6 +22,7 @@
 #define BROWN "\033[33m"
 #define NEON_BLUE "\033[96m"
 
+
 void Command_Help();
 void Command_Exit();
 void Command_Cd();
@@ -44,12 +45,15 @@ void History_r();
 char USER[512], path[512], lastpath[512], input[MAXINPUT], history[MAXHISTORY][MAXINPUT], space_buff;
 char *parameters[10], *input_p, *command, *param_p;
 char shell[5] = "shell";
+char *file_name;
+char redirection[MAXINPUT];
+char *parameters1[5], *parameters2[5];
 
 int num, line_number, command_counter;
 int hiscount = 0;
 int recursively_main = 0;
 
-FILE *historyfile;
+FILE *historyfile, *new_file1, *new_file2;
 
 
 
@@ -79,6 +83,19 @@ int main()
         RemoveRepeatsInHistory();
         RemoveIfSpaceIsFirstCharacter();
 
+
+        if ((strcmp(redirection, "overwrite") == 0) || (strcmp(redirection, "append") == 0) || (strcmp(redirection, "stdin") == 0) ){
+
+            if (parameters[command_counter - 1] != NULL){
+
+                file_name = parameters[command_counter - 1];
+                parameters[command_counter - 1] = NULL;
+                parameters[command_counter - 2] = NULL;
+                command_counter = command_counter - 2;
+
+            }
+        }
+
         if (command != NULL){
 
             if (strcmp(command, "help") == 0){
@@ -103,11 +120,34 @@ int main()
 
             }else{
 
+                int fd;
+
+                int my_stdout = dup(1);
+
                 pid_t pid = fork();
+
                 if ( pid  == 0){
+
+                    if (strcmp(redirection, "overwrite") == 0){
+
+                        fflush(stdout);
+                        fd = open(file_name,  O_WRONLY|O_CREAT|O_TRUNC, 0777);
+                        dup2(fd, 1);
+                        close(fd);
+
+                    }else if (strcmp(redirection, "append") == 0){
+
+                        fflush(stdout);
+                        fd = open(file_name, O_APPEND | O_WRONLY |O_CREAT, 0777);
+                        dup2(fd, 1);
+                        close(fd);
+
+                    }
 
                     if (execvp(command, parameters) == -1){
 
+                        dup2(my_stdout, 1);
+                        close(my_stdout);
                         printf(RED "-%s: %s: command not found\n" WHITE ,shell, command);
                         exit(1);
 
@@ -118,8 +158,10 @@ int main()
                     wait(NULL);
 
                 }
+
             }
             recursively_main = 0;
+            memset(redirection, 0, MAXINPUT);
 
 
         }else{
@@ -131,6 +173,7 @@ int main()
 
     StoreHistory("a");
     exit(0);
+
 
 }
 
@@ -155,12 +198,24 @@ void ReadCommand()      // wczytuje polecenie i zapisuje do tablicy wslaźników
     while (param_p != 0){
 
         parameters[i] = param_p;
+
+        if (strcmp(param_p, ">") == 0){     // sprawdza czy jest przekierowanie > lub >>
+
+           strcpy(redirection, "overwrite") ;
+
+        }else if (strcmp(param_p, ">>") == 0){
+
+            strcpy(redirection, "append");
+
+        }
+
         param_p = strtok(NULL, " ");
         i++;
     }
-
     parameters[i++] = NULL;
     command_counter = i-1;
+
+
 }
 
 void QuotationMark()       // przekształca komendę jeżeli jest w cudzysłowie
@@ -242,14 +297,38 @@ void Command_Help()
 {
     if (command_counter == 1){
 
-        printf(BROWN "\tWiktoria Grzesik - Projekt Microshell\n");
-        printf(YELLOW "Available commands : help, exit, cd, cp, history, !!, !n\n" WHITE);
+        if (strcmp(redirection, "overwrite") == 0){
+
+            new_file1 = fopen(file_name,"w");
+
+            fprintf(new_file1, BROWN "\tWiktoria Grzesik - Projekt Microshell\n");
+            fprintf(new_file1, YELLOW "Available commands : help, exit, cd, cp, history, !!, !n\n" WHITE);
+
+            fclose(new_file1);
+
+
+        }else if (strcmp(redirection, "append") == 0){
+
+            new_file1 = fopen(file_name,"a");
+
+            fprintf(new_file1, BROWN "\tWiktoria Grzesik - Projekt Microshell\n");
+            fprintf(new_file1, YELLOW "Available commands : help, exit, cd, cp, history, !!, !n\n" WHITE);
+
+            fclose(new_file1);
+
+        }else{
+
+            printf(BROWN "\tWiktoria Grzesik - Projekt Microshell\n");
+            printf(YELLOW "Available commands : help, exit, cd, cp, history, !!, !n\n" WHITE);
+
+        }
 
     }else{
 
         printf(RED "-%s: %s: too many arguments\n" WHITE , shell, command);
     }
 }
+
 
 void Command_Exit()
 {
@@ -338,14 +417,14 @@ void Command_Cp()
         }else {
 
         printf(RED "-%s: %s: " , shell, command);
-        printf("'%s' and '%s' are the same file\n "WHITE , parameters[2], parameters[2]);
+        printf(RED "'%s' and '%s' are the same file\n "WHITE , parameters[2], parameters[2]);
 
         }
 
     }else if (command_counter == 2){
 
         printf(RED "-%s: %s: " WHITE, shell, command);
-        printf("missing destination file operand after '%s'\n", parameters[1]);
+        printf(RED "missing destination file operand after '%s'\n", parameters[1]);
 
     }else if (command_counter == 1){
 
@@ -368,11 +447,40 @@ void Command_History()
 
         if (parameters[1] == NULL){    // gdy polecenie to "history", bez żadnej flagi
 
-            for (int j = 0;j < hiscount; j++){  // wypisanie historii
+         //   if (redirection_overwrite == 1){
+            if (strcmp(redirection, "overwrite") == 0){
+
+                new_file2 = fopen(file_name, "w");
+
+                for (int c = 0; c < hiscount; c++){
+
+                    fprintf(new_file2, "%s\n", history[c]);
+
+                }
+
+                fclose(new_file2);
+
+            }else if (strcmp(redirection, "append") == 0){
+
+                new_file2 = fopen(file_name, "a");
+
+                for (int c = 0; c < hiscount; c++){
+
+                    fprintf(new_file2, "%s\n", history[c]);
+
+                }
+
+                fclose(new_file2);
+
+            }else{
+
+                 for (int j = 0;j < hiscount; j++){  // wypisanie historii
 
                 printf("\t%d %s\n",j+1,history[j]);
 
+                }
             }
+
 
         }else{
 
@@ -398,7 +506,7 @@ void Command_History()
                     }else {
 
                         printf(RED "-%s: %s: %s: option requires an argument\n",shell, command, parameters[1]);      // błędnie podana flaga do history -d
-                        printf("history: usage: [-c] [-r] [-w] [-a] [-d offset] [n]\n" WHITE);
+                        printf(RED "history: usage: [-c] [-r] [-w] [-a] [-d offset] [n]\n" WHITE);
 
                     }
 
@@ -422,7 +530,7 @@ void Command_History()
             }else{
 
                 printf(RED "-%s: %s: %s: invalid option\n",shell, command, parameters[1]);      // błędnie podana flaga/polecenie
-                printf("history: usage: [-c] [-r] [-w] [-a] [-d offset] [n]\n" WHITE);
+                printf(RED "history: usage: [-c] [-r] [-w] [-a] [-d offset] [n]\n" WHITE);
 
             }
         }
