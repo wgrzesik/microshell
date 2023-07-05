@@ -6,7 +6,8 @@
 - reads commands in quotation mark
 - redirections (>, >>)
 - builtin commands (echo, cat, ls, ...)
-- implementations:
+- 
+## Implementations
   - exit 
   - help
   - cd [ , -, ~, dir]
@@ -14,6 +15,6 @@
   - !!
   - !(number)
   - history [-c] [-r] [-w] [-a] [-d offset] [(number)]
-      -- removing repeats and blanks spaces (enter)
-      -- removing if space is the first character
+    - removing repeats and blanks spaces (enter)
+    - removing if space is the first character
 
