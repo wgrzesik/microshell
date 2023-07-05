@@ -1,4 +1,4 @@
-#Project Microshell
+# Project Microshell
 
 ## Features
     - printing prompt (path and login)
