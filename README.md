@@ -6,7 +6,7 @@
 - reads commands in quotation mark
 - redirections (>, >>)
 - builtin commands (echo, cat, ls, ...)
-- 
+  
 ## Implementations
   - exit 
   - help
