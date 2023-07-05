@@ -1,6 +1,6 @@
-Project Microshell - SO
+#Project Microshell
 
-Features:
+## Features
     - printing prompt (path and login)
     - colours 
     - reads commands in quotation mark
